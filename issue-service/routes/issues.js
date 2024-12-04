@@ -1,25 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Issue = require('../models/Issue');
-const jwt = require('jsonwebtoken');
-require('dotenv').config(); // Load environment variables
-const secret = process.env.JWT_SECRET || 'your_jwt_secret'; // Use a secure secret in production
-// Middleware to authenticate and authorize users
-const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).send({ error: 'Unauthorized' });
-
-  jwt.verify(token, secret, (err, decoded) => {
-    if (err) return res.status(401).send({ error: 'Unauthorized' });
-    req.user = decoded;
-    next();
-  });
-};
+const { authenticate, authenticateAdmin } = require('../middleware/authenticate');
 
 // Create a new issue
 router.post('/issues', authenticate, async (req, res) => {
   const { description, location, area, city, photo } = req.body;
-  const newIssue = new Issue({ description, location, area, city, photo, reporterId: req.user.userId });
+  const newIssue = new Issue({ description, location, area, city, photo, reporterId: req.user.username });
   await newIssue.save();
   res.status(201).send(newIssue);
 });
@@ -47,36 +34,7 @@ router.get('/issues', async (req, res) => {
   }
 });
 
-
-// Fetch open issues by location
-router.get('/issues', async (req, res) => {
-  const { status, location, area, city } = req.query;
-  let issues;
-
-  if (location) {
-    issues = await Issue.find({ status, location });
-  } else if (city) {
-    issues = await Issue.find({ status, city });
-  } else if (area) {
-    issues = await Issue.find({ status, area });
-  } else {
-    issues = await Issue.find({ status });
-  }
-
-  res.send(issues);
-});
-
-// Fetch details of a specific issue
-router.get('/issues/:id', async (req, res) => {
-  const { id } = req.params;
-  const issue = await Issue.findById(id);
-  if (!issue) {
-    return res.status(404).send({ error: 'Issue not found' });
-  }
-  res.send(issue);
-});
-
-// Update the status of an issue
+// Update the status of an issue (reporter or admin)
 router.patch('/issues/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -86,8 +44,8 @@ router.patch('/issues/:id', authenticate, async (req, res) => {
     return res.status(404).send({ error: 'Issue not found' });
   }
 
-  if (status === 'Resolved' && issue.reporterId !== req.user.userId) {
-    return res.status(403).send({ error: 'Only the person who reported the issue can mark it as resolved' });
+  if (issue.reporterId !== req.user.username && req.user.role !== 'admin') {
+    return res.status(403).send({ error: 'Only the reporter or an admin can update the issue' });
   }
 
   issue.status = status;
@@ -99,8 +57,23 @@ router.patch('/issues/:id', authenticate, async (req, res) => {
 // Upvote an issue
 router.post('/issues/:id/upvote', authenticate, async (req, res) => {
   const { id } = req.params;
-  const updatedIssue = await Issue.findByIdAndUpdate(id, { $inc: { upvotes: 1 }, updatedAt: Date.now() }, { new: true });
-  res.send(updatedIssue);
+  const userId = req.user.username;
+
+  const issue = await Issue.findById(id);
+  if (!issue) {
+    return res.status(404).send({ error: 'Issue not found' });
+  }
+
+  if (issue.upvotedBy.includes(userId)) {
+    return res.status(400).send({ error: 'User has already upvoted this issue' });
+  }
+
+  issue.upvotes += 1;
+  issue.upvotedBy.push(userId);
+  issue.updatedAt = Date.now();
+  await issue.save();
+
+  res.send(issue);
 });
 
 // Add a comment to an issue
@@ -108,13 +81,13 @@ router.post('/issues/:id/comments', authenticate, async (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
   const issue = await Issue.findById(id);
-  issue.comments.push({ userId: req.user.userId, text });
+  issue.comments.push({ userId: req.user.username, text });
   issue.updatedAt = Date.now();
   await issue.save();
   res.status(201).send(issue);
 });
 
-// Delete a resolved issue
+// Delete a resolved issue (reporter or admin)
 router.delete('/issues/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const issue = await Issue.findById(id);
@@ -127,7 +100,7 @@ router.delete('/issues/:id', authenticate, async (req, res) => {
     return res.status(400).send({ error: 'Only resolved issues can be deleted' });
   }
 
-  if (issue.reporterId !== req.user.userId && req.user.role !== 'admin') {
+  if (issue.reporterId !== req.user.username && req.user.role !== 'admin') {
     return res.status(403).send({ error: 'Only the reporter or an admin can delete the issue' });
   }
 

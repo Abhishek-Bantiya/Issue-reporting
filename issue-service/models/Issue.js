@@ -1,4 +1,4 @@
-const mongoose = require('../db/connection');
+const mongoose = require('mongoose');
 
 const commentSchema = new mongoose.Schema({
   userId: String,
@@ -25,6 +25,10 @@ const issueSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  upvotedBy: {
+    type: [String],
+    default: [],
+  },
   comments: [commentSchema],
   createdAt: {
     type: Date,
@@ -36,4 +40,6 @@ const issueSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('Issue', issueSchema);
+const Issue = mongoose.model('Issue', issueSchema);
+
+module.exports = Issue;
