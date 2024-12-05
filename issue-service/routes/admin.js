@@ -33,4 +33,22 @@ router.delete('/issues/:id', async (req, res) => {
   }
 });
 
+// Admin route to get overall issue reports
+router.get('/reports/overall', async (req, res) => {
+  try {
+    const issuesByStatus = await Issue.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+    const issuesByArea = await Issue.aggregate([
+      { $group: { _id: "$area", count: { $sum: 1 } } }
+    ]);
+    const issuesByCity = await Issue.aggregate([
+      { $group: { _id: "$city", count: { $sum: 1 } } }
+    ]);
+    res.json({ issuesByStatus, issuesByArea, issuesByCity });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate overall reports' });
+  }
+});
+
 module.exports = router;

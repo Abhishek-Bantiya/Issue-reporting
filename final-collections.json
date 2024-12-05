@@ -1,0 +1,361 @@
+{
+  "info": {
+    "name": "With image service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_service_url}}/auth/register",
+              "host": ["{{auth_service_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_service_url}}/auth/login",
+              "host": ["{{auth_service_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_service_url}}/auth/me",
+              "host": ["{{auth_service_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Issues Service",
+      "item": [
+        {
+          "name": "Create Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Pothole on Main Street\",\n  \"description\": \"There is a large pothole on Main Street near the intersection.\",\n  \"city\": \"Sample City\",\n  \"area\": \"Downtown\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{issues_service_url}}/issues",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues"]
+            }
+          }
+        },
+        {
+          "name": "Get Issues",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{issues_service_url}}/issues",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues"]
+            }
+          }
+        },
+        {
+          "name": "Update Issue Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Resolved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{issues_service_url}}/issues/:id",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues", ":id"]
+            }
+          }
+        },
+        {
+          "name": "Upvote Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{issues_service_url}}/issues/:id/upvote",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues", ":id", "upvote"]
+            }
+          }
+        },
+        {
+          "name": "Add Comment to Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"This issue needs to be resolved quickly.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{issues_service_url}}/issues/:id/comments",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues", ":id", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Delete Resolved Issue",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{issues_service_url}}/issues/:id",
+              "host": ["{{issues_service_url}}"],
+              "path": ["issues", ":id"]
+            }
+          }
+        },
+        {
+          "name": "Get Personal Issue Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{issues_service_url}}/reports/personal",
+              "host": ["{{issues_service_url}}"],
+              "path": ["reports", "personal"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Service",
+      "item": [
+        {
+          "name": "Get All Issues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_service_url}}/issues",
+              "host": ["{{admin_service_url}}"],
+              "path": ["issues"]
+            }
+          }
+        },
+        {
+          "name": "Delete Issue",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_service_url}}/issues/:id",
+              "host": ["{{admin_service_url}}"],
+              "path": ["issues", ":id"]
+            }
+          }
+        },
+        {
+          "name": "Get Overall Issue Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{admin_service_url}}/reports/overall",
+              "host": ["{{admin_service_url}}"],
+              "path": ["reports", "overall"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Insights Service",
+      "item": [
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user123\",\n  \"message\": \"Your issue has been updated.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{notifications_service_url}}/notifications/send",
+              "host": ["{{notifications_service_url}}"],
+              "path": ["notifications", "send"]
+            }
+          }
+        },
+        {
+          "name": "Get Insights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notifications_service_url}}/insights",
+              "host": ["{{notifications_service_url}}"],
+              "path": ["insights"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Image Service",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{image_service_url}}/upload",
+              "host": ["{{image_service_url}}"],
+              "path": ["upload"]
+            }
+          }
+        },
+        {
+          "name": "Get Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{image_service_url}}/:imageId",
+              "host": ["{{image_service_url}}"],
+              "path": [":imageId"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
