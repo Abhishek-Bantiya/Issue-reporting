@@ -1,14 +1,41 @@
 const express = require('express');
+const axios = require('axios');
 const router = express.Router();
 const Issue = require('../models/Issue');
 const { authenticate, authenticateAdmin } = require('../middleware/authenticate');
 
+const IMAGE_SERVICE_URL = process.env.IMAGE_SERVICE_URL || 'http://localhost:3005/api/images';
+
 // Create a new issue
 router.post('/issues', authenticate, async (req, res) => {
   const { description, location, area, city, photo } = req.body;
-  const newIssue = new Issue({ description, location, area, city, photo, reporterId: req.user.username });
+  let photoString = '';
+
+  if (photo) {
+    try {
+      const response = await axios.post(`${IMAGE_SERVICE_URL}/upload`, { image: photo }, {
+        headers: { Authorization: req.header('Authorization') }
+      });
+      photoString = response.data.imageId;
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to upload image' });
+    }
+  }
+
+  const newIssue = new Issue({ description, location, area, city, photo: photoString, reporterId: req.user.username });
   await newIssue.save();
   res.status(201).send(newIssue);
+});
+
+// user route to fetch all issues
+router.get('/issues', async (req, res) => {
+  try {
+    const issues = await Issue.find();
+    res.send(issues);
+  } catch (error) {
+    console.error('Failed to fetch issues:', error);
+    res.status(500).send({ error: 'Failed to fetch issues' });
+  }
 });
 
 // Fetch issues based on a single parameter (id, area, or city)
@@ -39,12 +66,15 @@ router.patch('/issues/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const issue = await Issue.findById(id);
+  console.log(req.user)
 
   if (!issue) {
     return res.status(404).send({ error: 'Issue not found' });
   }
+  console.log(issue.reporterId !== req.user.username )
+  console.log(req.user.is_admin !== true)
 
-  if (issue.reporterId !== req.user.username && req.user.role !== 'admin') {
+  if (!(issue.reporterId === req.user.username || req.user.is_admin === true)) {
     return res.status(403).send({ error: 'Only the reporter or an admin can update the issue' });
   }
 
@@ -106,6 +136,20 @@ router.delete('/issues/:id', authenticate, async (req, res) => {
 
   await Issue.findByIdAndDelete(id);
   res.status(200).send({ message: 'Issue deleted successfully' });
+});
+
+// Route to get personal issue reports (for users)
+router.get('/reports/personal', authenticate, async (req, res) => {
+  try {
+    const user = req.user;
+    console.log(user);
+    const issues = await Issue.find({ reporterId: user.username });
+    const completedIssues = issues.filter(issue => issue.status === 'Resolved').length;
+    const pendingIssues = issues.filter(issue => issue.status !== 'Resolved').length;
+    res.json({ totalIssues: issues.length, completedIssues, pendingIssues });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate personal reports' });
+  }
 });
 
 module.exports = router;
