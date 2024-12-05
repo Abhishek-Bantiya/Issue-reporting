@@ -1,0 +1,239 @@
+{
+  "info": {
+    "name": "Issue Reporting E2E Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/register",
+              "host": ["{{authUrl}}"],
+              "path": ["register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"testuser@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/login",
+              "host": ["{{authUrl}}"],
+              "path": ["login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/profile",
+              "host": ["{{authUrl}}"],
+              "path": ["profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Issue Service",
+      "item": [
+        {
+          "name": "Create Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/issues",
+              "host": ["{{baseUrl}}"],
+              "path": ["issues"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Test Issue\",\n  \"location\": \"Test Location\",\n  \"area\": \"Test Area\",\n  \"city\": \"Test City\",\n  \"photo\": \"testphoto.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Issues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/issues",
+              "host": ["{{baseUrl}}"],
+              "path": ["issues"]
+            }
+          }
+        },
+        {
+          "name": "Comment on Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/issues/{{issueId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["issues", "{{issueId}}", "comments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"This is a test comment.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Upvote Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/issues/{{issueId}}/upvote",
+              "host": ["{{baseUrl}}"],
+              "path": ["issues", "{{issueId}}", "upvote"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Service",
+      "item": [
+        {
+          "name": "Get All Issues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{adminUrl}}/issues",
+              "host": ["{{adminUrl}}"],
+              "path": ["issues"]
+            }
+          }
+        },
+        {
+          "name": "Delete Issue",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{adminUrl}}/issues/{{issueId}}",
+              "host": ["{{adminUrl}}"],
+              "path": ["issues", "{{issueId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Insights Service",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{notificationsUrl}}/notifications",
+              "host": ["{{notificationsUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Get Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{notificationsUrl}}/insights",
+              "host": ["{{notificationsUrl}}"],
+              "path": ["insights"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
