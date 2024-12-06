@@ -35,4 +35,40 @@ router.post('/notifications/send', authenticate, async (req, res) => {
   res.status(201).send(newNotification);
 });
 
+// Send a notification for a comment
+router.post('/notifications/comment', authenticate, async (req, res) => {
+  const { userId, issueId, comment } = req.body;
+  const message = `New comment on your issue: ${comment}`;
+  const newNotification = new Notification({ userId, issueId, type: 'comment', message });
+  await newNotification.save();
+
+  // Send real-time notification
+  const wss = getWebSocketServer();
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(newNotification));
+    }
+  });
+
+  res.status(201).send(newNotification);
+});
+
+// Send a notification for a like
+router.post('/notifications/like', authenticate, async (req, res) => {
+  const { userId, issueId } = req.body;
+  const message = `Your issue has been liked`;
+  const newNotification = new Notification({ userId, issueId, type: 'like', message });
+  await newNotification.save();
+
+  // Send real-time notification
+  const wss = getWebSocketServer();
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(newNotification));
+    }
+  });
+
+  res.status(201).send(newNotification);
+});
+
 module.exports = router;
