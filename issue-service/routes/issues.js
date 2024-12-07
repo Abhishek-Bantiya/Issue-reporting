@@ -5,24 +5,35 @@ const Issue = require('../models/Issue');
 const { authenticate, authenticateAdmin } = require('../middleware/authenticate');
 
 const IMAGE_SERVICE_URL = process.env.IMAGE_SERVICE_URL || 'http://localhost:3005/api/images';
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005/api/notifications';
+
+// Send a notification
+const sendNotification = async (userId, issueId, message) => {
+  try {
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/send`, { userId, issueId, message }, {
+      headers: { Authorization: `Bearer ${process.env.NOTIFICATION_SERVICE_TOKEN}` }
+    });
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+};
 
 // Create a new issue
 router.post('/issues', authenticate, async (req, res) => {
   const { description, location, area, city, photo } = req.body;
   let photoString = '';
-
+  console.log(req.body)
   if (photo) {
-    try {
-      const response = await axios.post(`${IMAGE_SERVICE_URL}/upload`, { image: photo }, {
-        headers: { Authorization: req.header('Authorization') }
-      });
-      photoString = response.data.imageId;
-    } catch (error) {
-      return res.status(500).json({ error: 'Failed to upload image' });
-    }
+    // try {
+    //   const response = await axios.post(`${IMAGE_SERVICE_URL}/upload`, { image: photo }, {
+    //     headers: { Authorization: req.header('Authorization'),
+    //       'Content-Type': 'application/json',
+    //      }
+    //   });
+      photoString = "imageID";
   }
-
-  const newIssue = new Issue({ description, location, area, city, photo: photoString, reporterId: req.user.username });
+  const status = "Open"
+  const newIssue = new Issue({ description, location, area, city, photo: photoString, reporterId: req.user.username, status });
   await newIssue.save();
   res.status(201).send(newIssue);
 });
@@ -35,6 +46,19 @@ router.get('/issues', async (req, res) => {
   } catch (error) {
     console.error('Failed to fetch issues:', error);
     res.status(500).send({ error: 'Failed to fetch issues' });
+  }
+});
+
+// Fetch issues created by a specific user
+router.get('/issues/user/:username', authenticate, async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    const issues = await Issue.find({ reporterId: username });
+    res.send(issues);
+  } catch (error) {
+    console.error('Failed to fetch user issues:', error);
+    res.status(500).send({ error: 'Failed to fetch user issues' });
   }
 });
 
@@ -61,6 +85,8 @@ router.get('/issues', async (req, res) => {
   }
 });
 
+
+
 // Update the status of an issue (reporter or admin)
 router.patch('/issues/:id', authenticate, async (req, res) => {
   const { id } = req.params;
@@ -84,27 +110,50 @@ router.patch('/issues/:id', authenticate, async (req, res) => {
   res.send(issue);
 });
 
-// Upvote an issue
-router.post('/issues/:id/upvote', authenticate, async (req, res) => {
+router.post('/issues/:id/highlight', authenticate, async (req, res) => {
   const { id } = req.params;
-  const userId = req.user.username;
+  console.log(id)
+  try {
+    const issue = await Issue.findByIdAndUpdate(
+      id,
+      { $inc: { upvotes: 1 } }, // Use $inc for atomic increment
+      { new: true } // Return the updated document
+    );
 
-  const issue = await Issue.findById(id);
-  if (!issue) {
-    return res.status(404).send({ error: 'Issue not found' });
+    if (!issue) {
+      return res.status(404).send({ error: 'Issue not found' });
+    }
+
+    // Send notification to the issue owner
+    if (issue.reporterId.toString() !== req.user.username.toString()) {
+      await sendNotification(issue.reporterId, issueId, `Your issue has been liked.`);
+    }
+    res.send({ upvotes: issue.upvotes });
+  } catch (error) {
+    console.error('Failed to highlight issue:', error);
+    res.status(500).send({ error: 'Failed to highlight issue' });
   }
-
-  if (issue.upvotedBy.includes(userId)) {
-    return res.status(400).send({ error: 'User has already upvoted this issue' });
-  }
-
-  issue.upvotes += 1;
-  issue.upvotedBy.push(userId);
-  issue.updatedAt = Date.now();
-  await issue.save();
-
-  res.send(issue);
 });
+
+
+router.post('/issues/:id/remove-highlight', authenticate, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const issue = await Issue.findById(id);
+    if (!issue) {
+      return res.status(404).send({ error: 'Issue not found' });
+    }
+
+    issue.upvotes = Math.max((issue.upvotes || 0) - 1, 0); // Ensure upvotes don't go below zero
+    await issue.save();
+
+    res.send({ upvotes: issue.upvotes });
+  } catch (error) {
+    console.error('Failed to remove highlight from issue:', error);
+    res.status(500).send({ error: 'Failed to remove highlight from issue' });
+  }
+});
+
 
 // Add a comment to an issue
 router.post('/issues/:id/comments', authenticate, async (req, res) => {
@@ -115,7 +164,40 @@ router.post('/issues/:id/comments', authenticate, async (req, res) => {
   issue.updatedAt = Date.now();
   await issue.save();
   res.status(201).send(issue);
+
+  // Send notification to the issue owner
+  if (issue.reporterId.toString() !== req.user.username.toString()) {
+    await sendNotification(issue.reporterId, issueId, `New comment on your issue: ${text}`);
+  }
 });
+
+// Remove a comment from an issue
+router.delete('/issues/:id/comments/:commentId', authenticate, async (req, res) => {
+  console.log(req.params);
+  const { id, commentId } = req.params;
+
+  const issue = await Issue.findById(id);
+  if (!issue) {
+    return res.status(404).send({ error: 'Issue not found' });
+  }
+
+  const comment = issue.comments.id(commentId);
+  if (!comment) {
+    return res.status(404).send({ error: 'Comment not found' });
+  }
+
+  if (comment.userId !== req.user.username) {
+    return res.status(403).send({ error: 'You can only delete your own comments' });
+  }
+
+  // Remove the comment
+  issue.comments = issue.comments.filter(c => c.id !== commentId);
+  issue.updatedAt = Date.now();
+  
+  await issue.save();
+  res.send(issue);
+});
+
 
 // Delete a resolved issue (reporter or admin)
 router.delete('/issues/:id', authenticate, async (req, res) => {

@@ -1,0 +1,27 @@
+import React, { useState, useEffect } from 'react';
+import api from '../api';
+
+const Insights = () => {
+  const [insights, setInsights] = useState([]);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      const response = await api.get('/insights');
+      setInsights(response.data);
+    };
+    fetchInsights();
+  }, []);
+
+  return (
+    <div>
+      <h1>Insights</h1>
+      {/* <ul>
+        {insights.map(insight => (
+          <li key={insight.id}>{insight.description}</li>
+        ))}
+      </ul> */}
+    </div>
+  );
+};
+
+export default Insights;
